@@ -1,0 +1,40 @@
+// void?
+void sr_handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req){
+
+  sr_ethernet_hdr_t* ethHdr =(sr_ethernet_hdr_t*)req->packets->buf;
+  sr_arp_hdr_t* arpHdr = (sr_arp_hdr_t*)(req->packets->buf + sizeof(sr_ethernet_hdr_t));
+
+  //  if(difftime(curtime, req->sent) > 1.0){
+
+    if(req->times_sent >= 5){
+
+      printf("arp request more than 5 times. bail\n");
+      struct sr_packet* pkt;
+      for(pkt = req->packets; pkt != NULL; pkt = nextPkt){
+	// create & send ICMP error -- create method for ease?
+      }
+      
+      sr_arpreq_destroy(&(sr->cache), req); // remove request from queue
+
+    } else {
+
+      printf("sending arp request / arp response\n");
+
+
+      if(arpHdr->ar_op == ntohs(arp_op_req)){
+	// create & end ARP resp
+	create_arp_response(req, sr);
+      } else {
+	// create & send ARP request
+	send_arp_req(sr, req->packets->iface, sr_get_interface(req->packets->iface)->addr, arpHdr->ar_tip, arpHdr->ar_sip);
+	
+	req->sent = time(NULL);
+	req->times_sent++;
+      }
+    }
+    /*
+  } else {
+    printf("not quiet a 1 second delay, chillax bro\n");
+  }
+    */
+}
